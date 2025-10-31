@@ -15,10 +15,11 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: ["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:3000"],
     methods: ['GET', 'POST'],
     credentials: true,
   },
+  allowEIO3: true
 });
 
 // Middleware
@@ -33,10 +34,11 @@ const typingUsers = {};
 
 // Socket.io connection handler
 io.on('connection', (socket) => {
-  console.log(`User connected: ${socket.id}`);
+  console.log(`User connected: ${socket.id} from ${socket.handshake.address}`);
 
   // Handle user joining
   socket.on('user_join', (username) => {
+    console.log(`User ${username} (${socket.id}) joining chat`);
     users[socket.id] = { username, id: socket.id };
     io.emit('user_list', Object.values(users));
     io.emit('user_joined', { username, id: socket.id });
@@ -121,6 +123,11 @@ app.get('/api/users', (req, res) => {
 // Root route
 app.get('/', (req, res) => {
   res.send('Socket.io Chat Server is running');
+});
+
+// Test route
+app.get('/test', (req, res) => {
+  res.json({ message: 'Server is working!', users: Object.keys(users).length });
 });
 
 // Start server

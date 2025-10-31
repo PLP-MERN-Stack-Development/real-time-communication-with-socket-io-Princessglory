@@ -2,7 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 import './App.css';
 
-const socket = io('http://localhost:5000');
+const socket = io('http://localhost:5000', {
+  transports: ['websocket', 'polling'],
+  timeout: 20000,
+  forceNew: true
+});
 
 function App() {
   const [username, setUsername] = useState('');
@@ -12,6 +16,8 @@ function App() {
   const [users, setUsers] = useState([]);
   const [typingUsers, setTypingUsers] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState('Connecting...');
+  const [isConnected, setIsConnected] = useState(false);
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
 
@@ -24,18 +30,40 @@ function App() {
   }, [messages]);
 
   useEffect(() => {
+    // Socket connection events
+    socket.on('connect', () => {
+      console.log('Connected to server');
+      setConnectionStatus('Connected');
+      setIsConnected(true);
+    });
+
+    socket.on('disconnect', () => {
+      console.log('Disconnected from server');
+      setConnectionStatus('Disconnected');
+      setIsConnected(false);
+    });
+
+    socket.on('connect_error', (error) => {
+      console.error('Connection error:', error);
+      setConnectionStatus('Connection Error');
+      setIsConnected(false);
+    });
+
     // Listen for messages
     socket.on('receive_message', (messageData) => {
+      console.log('Received message:', messageData);
       setMessages(prev => [...prev, messageData]);
     });
 
     // Listen for user list updates
     socket.on('user_list', (userList) => {
+      console.log('User list updated:', userList);
       setUsers(userList);
     });
 
     // Listen for user joined
     socket.on('user_joined', (userData) => {
+      console.log('User joined:', userData);
       setMessages(prev => [...prev, {
         id: Date.now(),
         sender: 'System',
@@ -82,6 +110,7 @@ function App() {
   const handleJoin = (e) => {
     e.preventDefault();
     if (username.trim()) {
+      console.log('Joining chat with username:', username.trim());
       socket.emit('user_join', username.trim());
       setIsJoined(true);
     }
@@ -90,6 +119,7 @@ function App() {
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (message.trim()) {
+      console.log('Sending message:', message.trim());
       socket.emit('send_message', { message: message.trim() });
       setMessage('');
       handleTyping(false);
@@ -136,6 +166,7 @@ function App() {
         <div className="join-container">
           <div className="join-form">
             <h1>Socket.io Chat</h1>
+            <p className="connection-status">Status: {connectionStatus}</p>
             <form onSubmit={handleJoin}>
               <input
                 type="text"
@@ -145,7 +176,9 @@ function App() {
                 maxLength={20}
                 required
               />
-              <button type="submit">Join Chat</button>
+              <button type="submit" disabled={!isConnected}>
+                {isConnected ? 'Join Chat' : 'Connecting...'}
+              </button>
             </form>
           </div>
         </div>
