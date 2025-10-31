@@ -78,9 +78,7 @@ A real-time chat application built with React.js and Socket.io for the Week 5 ME
 ## Screenshots
 
 ### Main Chat Interface
-![Main Chat Interface](screenshots/Post%20Home.png)
-
-The application features a clean interface with a user list sidebar and main chat area where users can send messages in real-time.
+![Main Chat Interface](screenshots/Front%20page.png)
 
 ### Private Messaging
 ![Private Messaging](screenshots/users%20page.png)
